@@ -1,10 +1,18 @@
 package com.parkapp.android.parkapp;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
+import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -25,9 +33,9 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AsyncResponse {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AsyncResponse, LocationListener {
     private GoogleMap mMap;
-    private Map<String,Marker> sensors = new HashMap<>();
+    private Map<String, Marker> sensors = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,14 +50,49 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mMap.setMyLocationEnabled(true);
+            // Getting LocationManager object from System Service LOCATION_SERVICE
+            LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
+            // Creating a criteria object to retrieve provider
+            Criteria criteria = new Criteria();
+
+            // Getting the name of the best provider
+            String provider = locationManager.getBestProvider(criteria, true);
+
+            // Getting Current Location
+            Location location = locationManager.getLastKnownLocation(provider);
+
+            if(location!=null){
+                onLocationChanged(location);
+            }
+            //locationManager.requestLocationUpdates(provider, 20000, 0, (android.location.LocationListener) this);
+        } else {
+            // Show rationale and request permission.
+        }
+
+        callAsynchronousTask();
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        // Getting latitude of the current location
+        double latitude = location.getLatitude();
+
+        // Getting longitude of the current location
+        double longitude = location.getLongitude();
+
+        // Creating a LatLng object for the current location
+        LatLng latLng = new LatLng(latitude, longitude);
+
         CameraPosition camPos = new CameraPosition.Builder()
-                .target(new LatLng(36.535736, -6.300415))
-                .zoom(16)
+                .target(latLng)
+                .zoom(15)
                 .build();
         CameraUpdate camUpd = CameraUpdateFactory.newCameraPosition(camPos);
         mMap.animateCamera(camUpd);
-
-        callAsynchronousTask();
     }
 
     public void callAsynchronousTask() {
