@@ -6,11 +6,9 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Handler;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
 
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdate;
@@ -89,7 +87,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         CameraPosition camPos = new CameraPosition.Builder()
                 .target(latLng)
-                .zoom(15)
+                .zoom(16)
                 .build();
         CameraUpdate camUpd = CameraUpdateFactory.newCameraPosition(camPos);
         mMap.animateCamera(camUpd);
@@ -145,7 +143,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             String sensorId = sensor.getString("sensorID");
             Double lat = Double.parseDouble(sensor.getString("lat"));
             Double lng = Double.parseDouble(sensor.getString("lon"));
-            Boolean free = "1".equals(sensor.getString("status"));
+            int free = Integer.parseInt(sensor.getString("status"));
 
             if(sensors.containsKey(sensorId)){
                 Marker marker = sensors.get(sensorId);
@@ -155,9 +153,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             MarkerOptions markerOptions = new MarkerOptions();
 
             LatLng coordinates = new LatLng(lat, lng);
-            if (free) {
-                markerOptions.position(coordinates).icon(BitmapDescriptorFactory
-                        .defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+            if (free >= 1) {
+                if (free > 1) {
+                    markerOptions.position(coordinates).icon(BitmapDescriptorFactory.fromResource(R.drawable.parking_ico_g));
+                } else {
+                    markerOptions.position(coordinates).icon(BitmapDescriptorFactory.fromResource(R.drawable.parking_ico_b));
+                }
             } else {
                 markerOptions.position(coordinates).icon(BitmapDescriptorFactory
                         .defaultMarker(BitmapDescriptorFactory.HUE_RED));
