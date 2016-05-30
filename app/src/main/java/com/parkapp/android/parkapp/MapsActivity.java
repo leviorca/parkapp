@@ -112,6 +112,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         };
 
         executeSensorsAsyncTask("http://10.0.2.2/sensors.php"); //first execution
+        //executeSensorsAsyncTask("http://172.16.96.129/sensors.php"); //first execution
         timer.schedule(doAsynchronousTask, 15000, 15000); //execute in every 15000 ms
     }
 
