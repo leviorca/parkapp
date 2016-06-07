@@ -102,7 +102,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 handler.post(new Runnable() {
                     public void run() {
                         try {
-                            executeSensorsAsyncTask("http://10.0.2.2/sensors.php");
+                            executeSensorsAsyncTask("http://172.16.96.129/sensors.php");
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
