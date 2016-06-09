@@ -6,9 +6,12 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
+import android.view.View;
 
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdate;
@@ -26,7 +29,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -34,6 +39,8 @@ import java.util.TimerTask;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AsyncResponse, LocationListener {
     private GoogleMap mMap;
     private Map<String, Marker> sensors = new HashMap<>();
+    private List<Marker> freeParkings = new ArrayList<>();
+    private LocationManager locationManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,7 +59,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 == PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
             // Getting LocationManager object from System Service LOCATION_SERVICE
-            LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+            locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
             // Creating a criteria object to retrieve provider
             Criteria criteria = new Criteria();
@@ -63,7 +70,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // Getting Current Location
             Location location = locationManager.getLastKnownLocation(provider);
 
-            if(location!=null){
+            if (location != null) {
                 onLocationChanged(location);
             }
             //locationManager.requestLocationUpdates(provider, 20000, 0, (android.location.LocationListener) this);
@@ -145,28 +152,78 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Double lng = Double.parseDouble(sensor.getString("lon"));
             int free = Integer.parseInt(sensor.getString("status"));
 
-            if(sensors.containsKey(sensorId)){
-                Marker marker = sensors.get(sensorId);
-                marker.remove();
-                sensors.remove(sensorId);
-            }
-            MarkerOptions markerOptions = new MarkerOptions();
-
+            Marker marker;
             LatLng coordinates = new LatLng(lat, lng);
+            if (sensors.containsKey(sensorId)) {
+                marker = sensors.get(sensorId);
+                marker.setPosition(coordinates);
+            } else {
+                MarkerOptions markerOptions = new MarkerOptions();
+                markerOptions.position(coordinates);
+                marker = mMap.addMarker(markerOptions);
+                sensors.put(sensorId, marker);
+            }
+
+            marker.setVisible(true);
+
             if (free >= 1) {
                 if (free > 1) {
-                    markerOptions.position(coordinates).icon(BitmapDescriptorFactory.fromResource(R.drawable.parking_ico_g));
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.parking_ico_g));
                 } else {
-                    markerOptions.position(coordinates).icon(BitmapDescriptorFactory.fromResource(R.drawable.parking_ico_b));
+                    if (!freeParkings.contains(marker)) {
+                        freeParkings.add(marker);
+                    }
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.parking_ico_b));
                 }
             } else {
-                markerOptions.position(coordinates).icon(BitmapDescriptorFactory
-                        .defaultMarker(BitmapDescriptorFactory.HUE_RED));
+                if (freeParkings.contains(marker)) {
+                    freeParkings.remove(marker);
+                }
+                marker.setVisible(false);
             }
-
-            sensors.put(sensorId, mMap.addMarker(markerOptions));
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    public Location getCurrentLocation() {
+        // Creating a criteria object to retrieve provider
+        Criteria criteria = new Criteria();
+
+        // Getting Current Location
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // Show rationale and request permission.
+        }
+        return locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria, false));
+    }
+
+    /** Called when the user touches the button */
+    public void searchNearbyParking (View view) {
+        // Do something in response to button click
+
+        Location currentLocation = getCurrentLocation();
+        Marker nearby = searchNearbyParking(currentLocation);
+        if(nearby != null) {
+            mMap.animateCamera(CameraUpdateFactory.newLatLng(nearby.getPosition()), 250, null);
+            Log.v("Log:", "aqui estamos");
+        }
+    }
+
+    public Marker searchNearbyParking (Location origenLocation) {
+        // Do something in response to button click
+        Marker nearby = null;
+        Location targetLocation = new Location("");
+        float shorterDistance = -1;
+        for (Marker marker : freeParkings) {
+            targetLocation.setLatitude(marker.getPosition().latitude);
+            targetLocation.setLongitude(marker.getPosition().longitude);
+
+            float distance = origenLocation.distanceTo(targetLocation);
+            if (shorterDistance == -1 || distance < shorterDistance) {
+                shorterDistance = distance;
+                nearby = marker;
+            }
+        }
+        return nearby;
     }
 }
