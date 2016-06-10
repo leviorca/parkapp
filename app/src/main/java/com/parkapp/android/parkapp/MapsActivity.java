@@ -3,6 +3,7 @@ package com.parkapp.android.parkapp;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Handler;
@@ -29,9 +30,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -57,18 +60,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
+            // Enable location
             mMap.setMyLocationEnabled(true);
             // Getting LocationManager object from System Service LOCATION_SERVICE
             locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-
-            // Creating a criteria object to retrieve provider
-            Criteria criteria = new Criteria();
-
-            // Getting the name of the best provider
-            String provider = locationManager.getBestProvider(criteria, true);
-
             // Getting Current Location
-            Location location = locationManager.getLastKnownLocation(provider);
+            Location location = getCurrentLocation();
 
             if (location != null) {
                 onLocationChanged(location);
@@ -187,14 +184,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public Location getCurrentLocation() {
-        // Creating a criteria object to retrieve provider
-        Criteria criteria = new Criteria();
-
-        // Getting Current Location
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Show rationale and request permission.
         }
-        return locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria, false));
+        // Creating a criteria object to retrieve provider
+        Criteria criteria = new Criteria();
+
+        // Getting the name of the best provider
+        String provider = locationManager.getBestProvider(criteria, true);
+
+        // Getting Current Location
+        return locationManager.getLastKnownLocation(provider);
     }
 
     /** Called when the user touches the button */
@@ -202,14 +202,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Do something in response to button click
 
         Location currentLocation = getCurrentLocation();
-        Marker nearby = searchNearbyParking(currentLocation);
+        Marker nearby = searchNearbyMarker(currentLocation);
         if(nearby != null) {
             mMap.animateCamera(CameraUpdateFactory.newLatLng(nearby.getPosition()), 250, null);
+            String title = getAddressFromMarker(nearby);
+            nearby.setTitle(title);
+            nearby.showInfoWindow();
             Log.v("Log:", "aqui estamos");
         }
     }
 
-    public Marker searchNearbyParking (Location origenLocation) {
+    public Marker searchNearbyMarker(Location originLocation) {
         // Do something in response to button click
         Marker nearby = null;
         Location targetLocation = new Location("");
@@ -218,12 +221,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             targetLocation.setLatitude(marker.getPosition().latitude);
             targetLocation.setLongitude(marker.getPosition().longitude);
 
-            float distance = origenLocation.distanceTo(targetLocation);
+            float distance = originLocation.distanceTo(targetLocation);
             if (shorterDistance == -1 || distance < shorterDistance) {
                 shorterDistance = distance;
                 nearby = marker;
             }
         }
         return nearby;
+    }
+
+    public String getAddressFromMarker(Marker marker) {
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        String address = "Dirección: ";
+
+        try {
+            address += geocoder.getFromLocation( marker.getPosition().latitude, marker.getPosition().longitude, 1 ).get( 0 ).getAddressLine( 0 );
+        } catch (IOException e) {
+            address += "Not_defined";
+        }
+        return address;
     }
 }
