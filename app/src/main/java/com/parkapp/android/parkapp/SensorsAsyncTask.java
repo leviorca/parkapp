@@ -19,7 +19,6 @@ public class SensorsAsyncTask extends AsyncTask<String, String, String> {
         StringBuilder result = new StringBuilder();
 
         try {
-            //URL url = new URL("http://10.0.2.2/sensors.php");
             URL url = new URL(args[0]);
             urlConnection = (HttpURLConnection) url.openConnection();
             InputStream in = new BufferedInputStream(urlConnection.getInputStream());

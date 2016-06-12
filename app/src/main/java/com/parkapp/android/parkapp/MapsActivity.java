@@ -98,6 +98,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void callAsynchronousTask() {
+        final String path = "http://172.16.96.129/sensors.php";
         final Handler handler = new Handler();
         Timer timer = new Timer();
         TimerTask doAsynchronousTask = new TimerTask() {
@@ -106,7 +107,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 handler.post(new Runnable() {
                     public void run() {
                         try {
-                            executeSensorsAsyncTask("http://172.16.96.129/sensors.php");
+                            executeSensorsAsyncTask(path);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -115,7 +116,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         };
 
-        executeSensorsAsyncTask("http://172.16.96.129/sensors.php"); //first execution
+        executeSensorsAsyncTask(path); //first execution
         timer.schedule(doAsynchronousTask, 15000, 15000); //execute in every 15000 ms
     }
 
@@ -205,8 +206,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Marker nearby = searchNearbyMarker(currentLocation);
         if(nearby != null) {
             mMap.animateCamera(CameraUpdateFactory.newLatLng(nearby.getPosition()), 250, null);
-            String title = getAddressFromMarker(nearby);
-            nearby.setTitle(title);
             nearby.showInfoWindow();
             Log.v("Log:", "aqui estamos");
         }
@@ -227,6 +226,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 nearby = marker;
             }
         }
+        String title = getAddressFromMarker(nearby);
+        title += " (" + String.format("%.2f", shorterDistance) + " m)";
+        nearby.setTitle(title);
         return nearby;
     }
 
