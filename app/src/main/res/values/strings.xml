@@ -2,4 +2,7 @@
     <string name="app_name">Parkapp</string>
     <string name="title_activity_maps">Map</string>
     <string name="search_parking">Buscar</string>
+    <string name="ok">Ok</string>
+    <string name="cancel">Cancelar</string>
+    <string name="dialog_add_favourites">Quiere añadir este punto a sus favoritos?</string>
 </resources>

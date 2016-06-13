@@ -1,8 +1,10 @@
 package com.parkapp.android.parkapp;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.location.Criteria;
@@ -11,6 +13,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
@@ -42,19 +45,20 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AsyncResponse, LocationListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AsyncResponse, LocationListener, AddToFavouritesDialogFragment.AddToFavouritesDialogListener {
     private GoogleMap mMap;
     private Map<String, Marker> sensors = new HashMap<>();
     private List<Marker> freeParkings = new ArrayList<>();
     private List<Marker> favourites = new ArrayList<>();
     private LocationManager locationManager;
+    private LatLng fClickPos;
 
     Context context = this;
     FavouritesDataSource Fdata;
     MyMarkerObj Mobj;
     static final ContentValues contentValues = new ContentValues();
     boolean dbCheckedOpen = false;
-    
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,28 +75,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Fdata = new FavouritesDataSource(context);
         Mobj = new MyMarkerObj();
 
-        try {
-            Fdata.open();
-            dbCheckedOpen = true;
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+        loadFavourites();
 
-        Cursor cursor = Fdata.db.query(LocationsDB.DATABASE_TABLE, Fdata.cols, null, null, null, null, null);
-        if (cursor != null) {
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(final LatLng point) {
+                // Create an instance of the dialog fragment and show it
+                fClickPos = point;
+                DialogFragment dialog = new AddToFavouritesDialogFragment();
+                dialog.show(getSupportFragmentManager(), "AddToFavouritesDialogFragment");
+            }
+        });
 
-            List<MyMarkerObj> mmo = Fdata.getMarkers();
-            for (int i = 0; i < mmo.size(); i++)
-            {
-                String latidutes = mmo.get(i).getLat().toString();
-                String langidutes = mmo.get(i).getLng().toString();
-                LatLng latlng = new LatLng(Double.valueOf(latidutes), Double.valueOf(langidutes));
-                addFavouriteMarker(latlng);
-            }//for
-        }//if
-
-        testDialog();
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -114,41 +108,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         callAsynchronousTask();
     }
 
-    public void testDialog()
-    {
-        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+    public void loadFavourites() {
+        try {
+            Fdata.open();
+            dbCheckedOpen = true;
+        }
+        catch (Exception e) {
+        }
 
-            @Override
-            public void onMapLongClick(final LatLng point) {
-                if (dbCheckedOpen == false)
-                {
-                    try {
-                        Fdata.open();
-                    }
-                    catch (Exception e) {
-                    }
-                }
-                Mobj.setLat(String.valueOf(point.latitude));
-                Mobj.setLng(String.valueOf(point.longitude));
-                final LatLng latlng = new LatLng(Double.valueOf(Mobj.getLat()), Double.valueOf(Mobj.getLng()));
-
-                // Setting latitude in ContentValues
-                contentValues.put(LocationsDB.FIELD_LAT, Mobj.getLat());
-
-                // Setting longitude in ContentValues
-                contentValues.put(LocationsDB.FIELD_LNG, Mobj.getLng());
-
+        Cursor cursor = Fdata.db.query(LocationsDB.DATABASE_TABLE, Fdata.cols, null, null, null, null, null);
+        if (cursor != null) {
+            List<MyMarkerObj> mmos = Fdata.getMarkers();
+            for (MyMarkerObj mmo : mmos) {
+                String lat = mmo.getLat();
+                String lng = mmo.getLng();
+                LatLng latlng = new LatLng(Double.valueOf(lat), Double.valueOf(lng));
                 addFavouriteMarker(latlng);
-
-                Fdata.addMarker();
-                Fdata.close();
-                dbCheckedOpen = false;
-
-            }//onMapLongClick
-
-        }); //setOnMapLongClickListener
-
-    }//reminderDialog
+            }
+        }
+    }
 
     @Override
     public void onLocationChanged(Location location) {
@@ -318,5 +296,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void addFavouriteMarker(LatLng latlng) {
         Marker marker = mMap.addMarker(new MarkerOptions().position(latlng));
         favourites.add(marker);
+    }
+
+    @Override
+    public void onDialogPositiveClick(DialogFragment dialog) {
+        if (dbCheckedOpen == false)
+        {
+            try {
+                Fdata.open();
+            }
+            catch (Exception e) {
+            }
+        }
+        Mobj.setLat(String.valueOf(fClickPos.latitude));
+        Mobj.setLng(String.valueOf(fClickPos.longitude));
+        final LatLng latlng = new LatLng(Double.valueOf(Mobj.getLat()), Double.valueOf(Mobj.getLng()));
+
+        // Setting latitude in ContentValues
+        contentValues.put(LocationsDB.FIELD_LAT, Mobj.getLat());
+
+        // Setting longitude in ContentValues
+        contentValues.put(LocationsDB.FIELD_LNG, Mobj.getLng());
+
+        addFavouriteMarker(latlng);
+
+        Fdata.addMarker();
+        Fdata.close();
+        dbCheckedOpen = false;
+    }
+
+    @Override
+    public void onDialogNegativeClick(DialogFragment dialog) {
+
     }
 }
