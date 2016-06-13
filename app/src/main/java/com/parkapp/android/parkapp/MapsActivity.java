@@ -45,7 +45,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AsyncResponse, LocationListener, AddToFavouritesDialogFragment.AddToFavouritesDialogListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AsyncResponse, LocationListener, AddToFavouritesDialogFragment.AddToFavouritesDialogListener, SelectFavouriteDialogFragment.SelectFavouriteDialogListener {
     private GoogleMap mMap;
     private Map<String, Marker> sensors = new HashMap<>();
     private List<Marker> freeParkings = new ArrayList<>();
@@ -260,6 +260,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    /** Called when the user touches the button */
+    public void searchParkingNearFavourite (View view) {
+        // Do something in response to button click
+        DialogFragment dialog = new SelectFavouriteDialogFragment(favourites);
+        dialog.show(getSupportFragmentManager(), "SelectFavouriteDialogFragment");
+    }
+
     public Marker searchNearbyMarker(Location originLocation) {
         // Do something in response to button click
         Marker nearby = null;
@@ -294,12 +301,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void addFavouriteMarker(LatLng latlng) {
+        // Setting longitude in ContentValues
         Marker marker = mMap.addMarker(new MarkerOptions().position(latlng));
+        String title = getAddressFromMarker(marker);
+        marker.setTitle(title);
         favourites.add(marker);
     }
 
     @Override
-    public void onDialogPositiveClick(DialogFragment dialog) {
+    public void onFavouriteDialogPositiveClick(DialogFragment dialog) {
         if (dbCheckedOpen == false)
         {
             try {
@@ -326,7 +336,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
-    public void onDialogNegativeClick(DialogFragment dialog) {
+    public void onFavouriteDialogNegativeClick(DialogFragment dialog) {
 
+    }
+
+    @Override
+    public void onFavouriteDialogClick(DialogFragment dialog, int index) {
+
+        Marker favouriteMarker = favourites.get(index);
+        Location favouritetLocation = new Location("");
+        favouritetLocation.setLatitude (favouriteMarker.getPosition().latitude);
+        favouritetLocation.setLongitude(favouriteMarker.getPosition().longitude);
+        Marker nearby = searchNearbyMarker(favouritetLocation);
+        if(nearby != null) {
+            mMap.animateCamera(CameraUpdateFactory.newLatLng(nearby.getPosition()), 250, null);
+            nearby.showInfoWindow();
+        }
     }
 }
