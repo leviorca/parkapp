@@ -216,12 +216,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             if (free >= 1) {
                 if (free > 1) {
-                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.parking_ico_g));
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.parking_ico_pay));
                 } else {
                     if (!freeParkings.contains(marker)) {
                         freeParkings.add(marker);
                     }
-                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.parking_ico_b));
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.pariking_ico_free));
                 }
             } else {
                 if (freeParkings.contains(marker)) {
@@ -294,7 +294,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         try {
             address += geocoder.getFromLocation( marker.getPosition().latitude, marker.getPosition().longitude, 1 ).get( 0 ).getAddressLine( 0 );
-        } catch (IOException e) {
+        } catch (Exception e) {
             address += "Not_defined";
         }
         return address;
@@ -305,6 +305,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Marker marker = mMap.addMarker(new MarkerOptions().position(latlng));
         String title = getAddressFromMarker(marker);
         marker.setTitle(title);
+        marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.favourite));
         favourites.add(marker);
     }
 
