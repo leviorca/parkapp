@@ -1,10 +1,8 @@
 package com.parkapp.android.parkapp;
 
 import android.Manifest;
-import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.location.Criteria;
@@ -17,7 +15,6 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
 import android.view.View;
 
 import com.google.android.gms.location.LocationListener;
@@ -36,7 +33,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +42,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AsyncResponse, LocationListener, AddToFavouritesDialogFragment.AddToFavouritesDialogListener, SelectFavouriteDialogFragment.SelectFavouriteDialogListener {
+    private static final int MY_PERMISSIONS_ACCESS_FINE_LOCATION = 0;
     private GoogleMap mMap;
     private Map<String, Marker> sensors = new HashMap<>();
     private List<Marker> freeParkings = new ArrayList<>();
@@ -90,22 +87,43 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
-            // Enable location
-            mMap.setMyLocationEnabled(true);
-            // Getting LocationManager object from System Service LOCATION_SERVICE
-            locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-            // Getting Current Location
-            Location location = getCurrentLocation();
-
-            if (location != null) {
-                onLocationChanged(location);
-            }
-            //locationManager.requestLocationUpdates(provider, 20000, 0, (android.location.LocationListener) this);
+            setLocationProcess();
         } else {
             // Show rationale and request permission.
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    MY_PERMISSIONS_ACCESS_FINE_LOCATION);
         }
 
         callAsynchronousTask();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_ACCESS_FINE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    setLocationProcess();
+                } else {
+                    this.finishAffinity();
+                }
+                return;
+            }
+        }
+    }
+
+    public void setLocationProcess() {
+        // Enable location
+        mMap.setMyLocationEnabled(true);
+        // Getting LocationManager object from System Service LOCATION_SERVICE
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        // Getting Current Location
+        Location location = getCurrentLocation();
+
+        if (location != null) {
+            onLocationChanged(location);
+        }
+        //locationManager.requestLocationUpdates(provider, 20000, 0, (android.location.LocationListener) this);
     }
 
     public void loadFavourites() {
