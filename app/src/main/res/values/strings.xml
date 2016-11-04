@@ -7,4 +7,5 @@
     <string name="cancel">Cancelar</string>
     <string name="dialog_add_favourites">Quiere añadir este punto a sus favoritos?</string>
     <string name="pick_favourite">Selecciona un favorito</string>
+    <string name="google_app_id">com.parkapp.android.parkapp</string>
 </resources>
